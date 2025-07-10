@@ -219,7 +219,7 @@ with tab2:
         fig_heatmap = px.imshow( heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds", title="Porcentaje de Población con cada Carencia por Colonia" )
         st.plotly_chart(fig_heatmap, use_container_width=True)
 
-# --- PESTAÑA 3: Cobertura General + Seguimiento Operativo ---
+# --- PESTAÑA 3: Con Perfil Demográfico para el Grupo Sin Cobertura ---
 with tab3:
     st.header("Análisis de Cobertura y Seguimiento")
 
@@ -246,10 +246,7 @@ with tab3:
     # --- Lógica de la Sección 1 ---
     df_colonia = df[df["Colonia"] == colonia_cobertura]
     
-    # Beneficiarios del programa seleccionado
     beneficiarios = df_colonia[df_colonia["Programa_Asignado"] == programa_cobertura]
-    
-    # Población sin ningún programa en esa colonia
     poblacion_sin_programa = df_colonia[df_colonia["Programa_Asignado"] == "Ninguno"]
     
     m1, m2 = st.columns(2)
@@ -260,53 +257,50 @@ with tab3:
     if not poblacion_sin_programa.empty:
         st.markdown(f"**Perfil de las {len(poblacion_sin_programa)} personas sin programa en {colonia_cobertura}:**")
         
-        # Conteo del estatus operativo de las personas sin programa
-        conteo_estatus_sp = poblacion_sin_programa["Estatus_Operativo"].value_counts()
-        
+        # --- NUEVA SECCIÓN DE MÉTRICAS DE PERFIL ---
+        # Calculamos las estadísticas demográficas
+        num_mujeres = len(poblacion_sin_programa[poblacion_sin_programa['Sexo'] == 'Femenino'])
+        num_hombres = len(poblacion_sin_programa[poblacion_sin_programa['Sexo'] == 'Masculino'])
+        edad_promedio = poblacion_sin_programa['Edad'].mean()
+
+        # Las mostramos en columnas
+        m_perfil1, m_perfil2, m_perfil3 = st.columns(3)
+        m_perfil1.metric("Mujeres", value=f"{num_mujeres}")
+        m_perfil2.metric("Hombres", value=f"{num_hombres}")
+        m_perfil3.metric("Edad Promedio", value=f"{edad_promedio:.1f} años")
+        # ---------------------------------------------
+
+        # Gráfico de carencias (existente)
+        st.markdown("**Carencias más comunes en este grupo:**")
+        conteo_estatus_sp = poblacion_sin_programa[lista_carencias].sum().sort_values(ascending=False)
         fig_bar_sp = px.bar(
             conteo_estatus_sp,
-            orientation='h',
-            title="Estatus de Contacto del Grupo Sin Cobertura",
-            labels={'value': 'Número de Personas', 'index': 'Estatus'}
+            title="Carencias del Grupo Sin Cobertura"
         )
-        fig_bar_sp.update_layout(showlegend=False)
+        fig_bar_sp.update_layout(showlegend=False, yaxis_title=None, xaxis_title="Num. de Personas")
         fig_bar_sp.update_traces(marker_color='#b22e28')
         st.plotly_chart(fig_bar_sp, use_container_width=True)
 
     st.divider()
 
-    # --- SECCIÓN 2: FUNNEL DE SEGUIMIENTO OPERATIVO ---
+    # --- SECCIÓN 2: FUNNEL DE SEGUIMIENTO OPERATIVO (Sin cambios) ---
     st.subheader("Funnel de Avance para un Programa Específico")
     
-    # El funnel usa los mismos filtros de arriba para mantener la consistencia
+    # ... (El resto del código del funnel se queda exactamente igual) ...
     st.markdown(f"**Seguimiento para el programa '{programa_cobertura}' en la colonia '{colonia_cobertura}'**")
-    
-    # Contamos cuántas personas hay en cada estatus operativo (dentro de la colonia seleccionada)
     df_seguimiento = df[df["Colonia"] == colonia_cobertura]
     conteo_estatus = df_seguimiento["Estatus_Operativo"].value_counts()
-    
     data_funnel = {
         'Estatus': ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"],
-        'Cantidad': [
-            conteo_estatus.get("Por contactar", 0),
-            conteo_estatus.get("Pre-registro completo", 0),
-            conteo_estatus.get("Cita generada", 0),
-            conteo_estatus.get("Visita programada", 0)
-        ]
+        'Cantidad': [ conteo_estatus.get("Por contactar", 0), conteo_estatus.get("Pre-registro completo", 0), conteo_estatus.get("Cita generada", 0), conteo_estatus.get("Visita programada", 0) ]
     }
-    # El total a contactar es la suma de todos los pendientes en diferentes fases
     total_a_contactar = sum(data_funnel['Cantidad'])
     data_funnel['Cantidad'].insert(0, total_a_contactar)
     data_funnel['Estatus'].insert(0, 'Total Pendiente')
-    
-    fig_funnel = px.funnel(
-        data_funnel,
-        x='Cantidad',
-        y='Estatus',
-        title=f"Avance de Cobertura en {colonia_cobertura}"
-    )
+    fig_funnel = px.funnel( data_funnel, x='Cantidad', y='Estatus', title=f"Avance de Cobertura en {colonia_cobertura}" )
     fig_funnel.update_traces(marker={"color": ['#77100d', '#b22e28', '#d66058', '#f7b2ac', '#fdecea']})
     st.plotly_chart(fig_funnel, use_container_width=True)
+
 # --- PESTAÑA 4: Mapa Operativo con Leyenda Mejorada ---
 with tab4:
     st.header("Mapa de Seguimiento Operativo")
