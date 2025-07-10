@@ -137,34 +137,58 @@ with tab1:
         )
 
 
-# --- PESTAÑA 2: Con Heatmap y Botones Claros ---
+# --- PESTAÑA 2: Con Etiquetas Mejoradas ---
 with tab2:
     st.header("Identificación y Análisis de Población Objetivo")
-    # ... (código de filtros y lógica de filtrado sin cambios) ...
+
+    # --- Diccionario de Nombres Amigables ---
+    # Este diccionario traduce los nombres de columna a texto legible.
+    nombres_carencias = {
+        "Rezago_Educativo": "Rezago Educativo",
+        "Acceso_Salud": "Carencia de Acceso a la Salud",
+        "Seguridad_Social": "Carencia de Acceso a la Seguridad Social",
+        "Calidad_Vivienda": "Carencia por Calidad y Espacios de la Vivienda",
+        "Servicios_Vivienda": "Carencia por Servicios Básicos en la Vivienda",
+        "Acceso_Alimentacion": "Carencia por Acceso a la Alimentación"
+    }
+    lista_carencias = list(nombres_carencias.keys())
+
+    # --- Filtros ---
     col1, col2, col3 = st.columns(3)
     with col1:
         colonia_seleccionada = st.selectbox( "1. Selecciona una Colonia:", options=["Todas"] + sorted(df["Colonia"].unique()) )
     with col2:
         sexo_seleccionado = st.selectbox( "2. Selecciona Sexo:", options=["Ambos", "Masculino", "Femenino"] )
     with col3:
-        lista_carencias = [ "Rezago_Educativo", "Acceso_Salud", "Seguridad_Social", "Calidad_Vivienda", "Servicios_Vivienda", "Acceso_Alimentacion" ]
-        carencia_seleccionada = st.selectbox( "3. Filtra por Carencia:", options=["Todas las carencias"] + lista_carencias )
+        # El selectbox ahora muestra los nombres bonitos para el usuario
+        opcion_carencia_display = st.selectbox(
+            "3. Filtra por Carencia:",
+            options=["Todas las carencias"] + list(nombres_carencias.values())
+        )
+        # Invertimos el diccionario para encontrar el nombre de columna real a partir de la selección del usuario
+        carencia_seleccionada = next((key for key, value in nombres_carencias.items() if value == opcion_carencia_display), "Todas las carencias")
+
     rango_edad = st.slider( "4. Selecciona Rango de Edad:", min_value=0, max_value=90, value=(0, 90) )
     st.divider()
+
+    # (Lógica de filtrado sin cambios)
     df_filtrado = df.copy()
     if colonia_seleccionada != "Todas": df_filtrado = df_filtrado[df_filtrado["Colonia"] == colonia_seleccionada]
     if sexo_seleccionado != "Ambos": df_filtrado = df_filtrado[df_filtrado["Sexo"] == sexo_seleccionado]
     df_filtrado = df_filtrado[df_filtrado["Edad"].between(rango_edad[0], rango_edad[1])]
 
-
-    if df_filtrado.empty:
-        st.warning("No se encontraron registros con los criterios seleccionados.")
-    elif carencia_seleccionada != "Todas las carencias":
-        st.subheader(f"Población Objetivo con: {carencia_seleccionada.replace('_', ' ')}")
+    # --- LÓGICA DE VISUALIZACIÓN ---
+    if carencia_seleccionada != "Todas las carencias":
+        # --- LÍNEA MODIFICADA ---
+        # Usamos el diccionario para obtener el nombre amigable
+        nombre_amigable = nombres_carencias[carencia_seleccionada]
+        st.subheader(f"Población Objetivo: {nombre_amigable}")
+        
         df_objetivo = df_filtrado[df_filtrado[carencia_seleccionada] == 1]
-        # ... (código de la métrica, tabla y botones sin cambios) ...
+        
         if df_objetivo.empty: st.info("No hay personas con esta carencia en la selección actual.")
         else:
+            # (El resto de esta sección con la métrica, tabla y botones no cambia)
             st.metric(label="Total de Personas Identificadas", value=len(df_objetivo))
             st.dataframe(df_objetivo[["ID", "Colonia", "Edad", "Sexo", "Programa_Asignado", "Estatus_Operativo"]])
             st.markdown("---"); st.markdown("#### Acciones")
@@ -176,22 +200,24 @@ with tab2:
                 st.download_button( label="📥 Descargar Reporte en CSV", data=csv, file_name=f'reporte.csv', mime='text/csv', use_container_width=True )
             with col_accion2:
                 st.link_button( "📨 Enviar Comunicación / Gestionar", "https://construir-comunidad.bubbleapps.io/version-test/dashboard-admin", help="Abre la plataforma de gestión.", type="primary", use_container_width=True )
-
-    # El ranking general se muestra si no se ha filtrado por una carencia específica
-    if carencia_seleccionada == "Todas las carencias":
+    else:
         st.subheader("Vista General de Carencias")
         conteo_carencias = df_filtrado[lista_carencias].sum().sort_values(ascending=False)
+        
+        # Renombramos el índice del conteo para usar los nombres amigables en el gráfico
+        conteo_carencias.index = conteo_carencias.index.map(nombres_carencias)
+        
         fig_ranking = px.bar( conteo_carencias, x=conteo_carencias.values, y=conteo_carencias.index, orientation='h', title=f"Ranking de Carencias en: {colonia_seleccionada}", labels={'x': 'Número de Personas', 'y': 'Carencia Social'}, text_auto=True, color=conteo_carencias.values, color_continuous_scale=['#f9e5e4', '#4d100d'] )
         fig_ranking.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig_ranking, use_container_width=True)
 
-    # El mapa de calor SIEMPRE se muestra si están seleccionadas "Todas" las colonias
     if colonia_seleccionada == "Todas":
         st.subheader("Mapa de Calor: Carencias por Colonia")
-        heatmap_data = df_filtrado.groupby("Colonia")[lista_carencias].mean().sort_index()
-        fig_heatmap = px.imshow( heatmap_data, text_auto=".0%", aspect="auto", color_continuous_scale="Reds", title="Porcentaje de Población con cada Carencia por Colonia" )
+        heatmap_data = df_filtrado.groupby("Colonia")[lista_carencias].mean()
+        # Renombramos las columnas para el heatmap
+        heatmap_data.columns = heatmap_data.columns.map(nombres_carencias)
+        fig_heatmap = px.imshow( heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds", title="Porcentaje de Población con cada Carencia por Colonia" )
         st.plotly_chart(fig_heatmap, use_container_width=True)
-
 
 # --- PESTAÑA 3: Cobertura General + Seguimiento Operativo ---
 with tab3:
