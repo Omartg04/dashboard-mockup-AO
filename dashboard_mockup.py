@@ -81,59 +81,71 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 
-# --- PESTAÑA 1: PULSO DEL CENSO (VERSIÓN MEJORADA) ---
+# --- PESTAÑA 1: PULSO DEL CENSO (Con Datos de Contacto Fijos) ---
 with tab1:
     st.header("Pulso del Censo: Captura y Calidad")
 
-    # --- Definir los datos reales que quieres mostrar ---
+    # --- Sección de Avance y Calidad (existente) ---
     meta_registros = 16601
-    registros_crudos = 4467
     registros_limpios = 4269
+    registros_crudos = int(registros_limpios / 0.956)
 
-    # --- Cálculos ---
     avance_decimal = registros_crudos / meta_registros
-    avance_porcentaje = f"{avance_decimal:.1%}"
-    
     diferencia_registros = registros_limpios - registros_crudos
-    calidad_porcentaje = registros_limpios / registros_crudos
-    calidad_porcentaje_str = f"{calidad_porcentaje:.1%}"
+    calidad_porcentaje = registros_limpios / registros_crudos if registros_crudos > 0 else 0
 
-    # --- Layout en dos columnas ---
     col1, col2 = st.columns(2)
-
-    # --- Columna 1: Avance de Captura ---
     with col1:
         st.subheader("Avance de Captura vs Meta")
-        
-        # Métrica principal con el porcentaje
-        st.metric(label="Avance de Registros", value=avance_porcentaje)
-        
-        # Barra de progreso visual
+        st.metric(label="Avance de Registros", value=f"{avance_decimal:.1%}")
         st.progress(avance_decimal)
-        
-        # Texto con los números absolutos
         st.markdown(f"**{registros_crudos:,} / {meta_registros:,}**")
-
-    # --- Columna 2: Calidad e Impacto de Limpieza ---
     with col2:
         st.subheader("Impacto del Proceso de Limpieza")
-        
-        # Métrica que muestra la base limpia y la diferencia
         st.metric(
             label="Registros en Base Limpia",
             value=f"{registros_limpios:,}",
             delta=f"{diferencia_registros} registros eliminados"
         )
-        
-        # Separador visual
-        st.divider()
-
-        st.subheader("Calidad de la Base")
-
-        # Métrica con el porcentaje de calidad
         st.metric(
-            label="Registros Válidos vs. Crudos",
-            value=calidad_porcentaje_str
+            label="Calidad de la Base",
+            value=f"{calidad_porcentaje:.1%}"
+        )
+    
+    st.divider()
+
+    # --- NUEVA SECCIÓN: ANÁLISIS DE DATOS DE CONTACTO (CON DATOS FIJOS) ---
+    st.subheader("Calidad de Datos de Contacto")
+
+    # Definimos las variables con los números que nos proporcionaste
+    total_registros = 4269
+    con_celular = 4222
+    porc_celular = 0.9890
+    con_correo = 1744
+    porc_correo = 0.4085
+    estimacion_validos_porc = 0.875
+    correos_validos = 1526
+
+    st.markdown(f"Análisis sobre el total de **{total_registros:,}** registros en la base de datos.")
+    
+    col_contacto1, col_contacto2 = st.columns(2)
+
+    with col_contacto1:
+        st.markdown("##### 📱 Celular")
+        st.metric(
+            label="Porcentaje de registros con celular",
+            value=f"{porc_celular:.2%}"
+        )
+        st.info(f"Observaciones con celular: **{con_celular:,}**")
+
+    with col_contacto2:
+        st.markdown("##### ✉️ Correo Electrónico")
+        st.metric(
+            label="Porcentaje de registros con correo",
+            value=f"{porc_correo:.2%}"
+        )
+        st.info(f"Observaciones con correo: **{con_correo:,}**")
+        st.success(f"Correos válidos (estimado {estimacion_validos_porc:.1%}): **{correos_validos:,}**")
         )
 
 
