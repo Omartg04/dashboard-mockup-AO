@@ -341,7 +341,7 @@ with tab3:
             "Selecciona una Colonia:",
             options=sorted(df_personas["Colonia"].unique()),
             key="coverage_colonia",
-            index=list(sorted(df["Colonia"].unique())).index("Barrio Norte")
+            index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte")
         )
     with col2:
         programas_disponibles = sorted([p for p in df["Programa_Asignado"].unique() if p != "Ninguno"])
