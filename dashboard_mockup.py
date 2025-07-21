@@ -344,7 +344,7 @@ with tab3:
             index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte")
         )
     with col2:
-        programas_disponibles = sorted([p for p in df["Programa_Asignado"].unique() if p != "Ninguno"])
+        programas_disponibles = sorted([p for p in df_personas["Programa_Asignado"].unique() if p != "Ninguno"])
         programa_cobertura = st.selectbox(
             "Selecciona un Programa:",
             options=programas_disponibles,
