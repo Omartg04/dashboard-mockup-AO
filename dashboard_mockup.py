@@ -307,7 +307,7 @@ with tab2:
             col_accion1, col_accion2 = st.columns(2)
             with col_accion1:
                 @st.cache_data
-                def convertir_df_a_csv(df):
+                def convertir_df_a_csv(df_personas):
                     return df.to_csv(index=False).encode('utf-8')
                 csv = convertir_df_a_csv(df_objetivo[["ID", "Colonia", "Edad", "Sexo", "Programa_Asignado", "Estatus_Operativo"]])
                 st.download_button(label="📥 Descargar Reporte en CSV", data=csv, file_name=f'reporte.csv', mime='text/csv', use_container_width=True)
@@ -339,12 +339,12 @@ with tab3:
     with col1:
         colonia_cobertura = st.selectbox(
             "Selecciona una Colonia:",
-            options=sorted(df["Colonia"].unique()),
+            options=sorted(df_personas["Colonia"].unique()),
             key="coverage_colonia",
-            index=list(sorted(df["Colonia"].unique())).index("Barrio Norte")
+            index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte")
         )
     with col2:
-        programas_disponibles = sorted([p for p in df["Programa_Asignado"].unique() if p != "Ninguno"])
+        programas_disponibles = sorted([p for p in df_personas["Programa_Asignado"].unique() if p != "Ninguno"])
         programa_cobertura = st.selectbox(
             "Selecciona un Programa:",
             options=programas_disponibles,
@@ -397,7 +397,7 @@ with tab3:
     
     # ... (El resto del código del funnel se queda exactamente igual) ...
     st.markdown(f"**Seguimiento para el programa '{programa_cobertura}' en la colonia '{colonia_cobertura}'**")
-    df_seguimiento = df[df["Colonia"] == colonia_cobertura]
+    df_seguimiento = df_personas[df_personas["Colonia"] == colonia_cobertura]
     conteo_estatus = df_seguimiento["Estatus_Operativo"].value_counts()
     data_funnel = {
         'Estatus': ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"],
@@ -418,16 +418,16 @@ with tab4:
     # ... (código de filtros sin cambios) ...
     col1, col2 = st.columns(2)
     with col1:
-        colonia_mapa = st.selectbox( "Colonia a visualizar:", options=sorted(df["Colonia"].unique()), key="map_colonia", index=list(sorted(df["Colonia"].unique())).index("Barrio Norte") )
+        colonia_mapa = st.selectbox( "Colonia a visualizar:", options=sorted(df_personas["Colonia"].unique()), key="map_colonia", index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte") )
     with col2:
         carencia_mapa = st.selectbox( "Carencia a visualizar:", options=lista_carencias, key="map_carencia", index=lista_carencias.index("Acceso_Salud") )
     
     st.divider()
     
-    df_mapa_operativo = df[
-        (df["Colonia"] == colonia_mapa) &
-        (df[carencia_mapa] == 1) &
-        (df["Programa_Asignado"] == "Ninguno") # Solo mostramos a los pendientes en el mapa
+    df_mapa_operativo = df_personas[
+        (df_personas["Colonia"] == colonia_mapa) &
+        (df_personas[carencia_mapa] == 1) &
+        (df_personas["Programa_Asignado"] == "Ninguno") # Solo mostramos a los pendientes en el mapa
     ]
     
     # --- LEYENDA DEL MAPA MEJORADA Y A PRUEBA DE FALLOS ---
