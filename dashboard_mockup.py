@@ -346,7 +346,7 @@ with tab3:
 
     # --- NUEVA SECCIÓN: GRÁFICA DE PROGRAMAS SOCIALES ---
     st.divider()
-    st.subheader("Beneficiarios por Programa Social (Muestra)")
+    st.subheader("Personas sin Programa Social")
 
     # --- DATOS FIJOS PARA LA NUEVA GRÁFICA ---
     datos_fijos_programas = {
@@ -364,7 +364,7 @@ with tab3:
         x=conteo_programas.values,
         y=conteo_programas.index,
         orientation='h',
-        title="Personas Beneficiarias por Programa",
+        title="Personas Sin Apoyo Social",
         labels={'x': 'Número de Beneficiarios', 'y': 'Programa Social'},
         text_auto=True
     )
