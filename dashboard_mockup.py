@@ -104,8 +104,7 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
 
 
 # --- CARGA DE DATOS ---
-df = generar_datos_ficticios()
-
+df_manzanas, df_personas = generar_datos_unificados()
 # --- TÍTULO PRINCIPAL ---
 st.title("📊 Seguimiento CENSO PAPE Álvaro Obregón")
 st.markdown("Este es un ejemplo con **datos ficticios** para validar las funcionalidades clave en el taller de discovery.")
@@ -282,7 +281,7 @@ with tab2:
     st.divider()
 
     # --- Lógica de filtrado ---
-    df_filtrado = df.copy()
+    df_filtrado = df_personas.copy()
     if colonia_seleccionada != "Todas":
         df_filtrado = df_filtrado[df_filtrado["Colonia"] == colonia_seleccionada]
     if sexo_seleccionado != "Ambos":
@@ -354,7 +353,7 @@ with tab3:
         )
     
     # --- Lógica de la Sección 1 ---
-    df_colonia = df[df["Colonia"] == colonia_cobertura]
+    df_colonia = df_personas[df_personas["Colonia"] == colonia_cobertura]
     
     beneficiarios = df_colonia[df_colonia["Programa_Asignado"] == programa_cobertura]
     poblacion_sin_programa = df_colonia[df_colonia["Programa_Asignado"] == "Ninguno"]
