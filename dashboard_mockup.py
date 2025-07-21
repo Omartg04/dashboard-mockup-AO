@@ -151,6 +151,18 @@ with tab1:
     
     st.divider()
 
+    # --- SECCIÓN 2: INDICADORES CLAVE DE CAMPO (NUEVA SECCIÓN) ---
+    st.subheader("Resumen de Cobertura en Campo")
+
+    # Usamos 5 columnas para que los 5 indicadores se vean bien alineados
+    kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+
+    kpi1.metric(label="AGEB Visitadas", value="50")
+    kpi2.metric(label="Manzanas Visitadas", value="427")
+    kpi3.metric(label="Viviendas Visitadas", value="12,436")
+    kpi4.metric(label="Viviendas Censadas", value="5,494")
+    kpi5.metric(label="Personas Censadas", value="19,641")
+
 # --- NUEVA SECCIÓN DENTRO DE UN DESPLEGABLE ---
     with st.expander("🏘️ Ver Detalle de Avance Territorial por Manzana"):
         
