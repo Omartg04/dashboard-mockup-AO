@@ -254,45 +254,63 @@ with tab1:
         st.success(f"Correos válidos (estimado {estimacion_validos_porc:.1%}): **{correos_validos:,}**")
         
 
-
-# --- PESTAÑA 2: CÓDIGO COMPLETO Y CORREGIDO ---
+# --- PESTAÑA 2: CÓDIGO CORREGIDO Y REORDENADO ---
 with tab2:
-    st.header("Identificación y Análisis de Población Objetivo")
+    st.header("Análisis de Carencias Sociales")
 
-    # --- Diccionario de Nombres Amigables ---
+    # --- SECCIÓN 1: VISTA GENERAL CON DATOS FIJOS (AHORA AL PRINCIPIO) ---
+    st.subheader("Vista General de Carencias (Muestra)")
+
+    datos_fijos_carencias = {
+        "Carencia en seguridad social": 12498,
+        "Carencia en alimentación": 6936,
+        "Carencia en educación": 4384,
+        "Carencia de calidad de vivienda": 2122,
+        "Carencia de servicios básicos": 936
+    }
+    conteo_carencias_fijas = pd.Series(datos_fijos_carencias)
+
+    fig_ranking_fijo = px.bar(
+        conteo_carencias_fijas,
+        x=conteo_carencias_fijas.values,
+        y=conteo_carencias_fijas.index,
+        orientation='h',
+        title="Ranking de Carencias Sociales",
+        labels={'x': 'Número de Personas', 'y': 'Carencia Social'},
+        text_auto=True,
+        color=conteo_carencias_fijas.values,
+        color_continuous_scale=['#f9e5e4', '#4d100d']
+    )
+    fig_ranking_fijo.update_layout(coloraxis_showscale=False, yaxis={'categoryorder':'total ascending'})
+    st.plotly_chart(fig_ranking_fijo, use_container_width=True)
+
+    st.divider()
+
+    # --- SECCIÓN 2: IDENTIFICACIÓN DE POBLACIÓN OBJETIVO (INTERACTIVA) ---
+    st.header("Identificación y Análisis Detallado")
+    
+    # Diccionario de Nombres Amigables
     nombres_carencias = {
-        "Rezago_Educativo": "Rezago Educativo",
-        "Acceso_Salud": "Carencia de Acceso a la Salud",
-        "Seguridad_Social": "Carencia de Acceso a la Seguridad Social",
-        "Calidad_Vivienda": "Carencia por Calidad y Espacios de la Vivienda",
-        "Servicios_Vivienda": "Carencia por Servicios Básicos en la Vivienda",
-        "Acceso_Alimentacion": "Carencia por Acceso a la Alimentación"
+        "Rezago_Educativo": "Rezago Educativo", "Acceso_Salud": "Carencia de Acceso a la Salud",
+        "Seguridad_Social": "Carencia de Acceso a la Seguridad Social", "Calidad_Vivienda": "Carencia por Calidad y Espacios de la Vivienda",
+        "Servicios_Vivienda": "Carencia por Servicios Básicos en la Vivienda", "Acceso_Alimentacion": "Carencia por Acceso a la Alimentación"
     }
     lista_carencias = list(nombres_carencias.keys())
 
-    # --- Filtros ---
+    # Filtros
     col1, col2, col3 = st.columns(3)
     with col1:
-        colonia_seleccionada = st.selectbox(
-            "1. Selecciona una Colonia:",
-            options=["Todas"] + sorted(df_personas["Colonia"].unique())
-        )
+        colonia_seleccionada = st.selectbox("1. Selecciona una Colonia:", options=["Todas"] + sorted(df_personas["Colonia"].unique()))
     with col2:
-        sexo_seleccionado = st.selectbox(
-            "2. Selecciona Sexo:",
-            options=["Ambos", "Masculino", "Femenino"]
-        )
+        sexo_seleccionado = st.selectbox("2. Selecciona Sexo:", options=["Ambos", "Masculino", "Femenino"])
     with col3:
-        opcion_carencia_display = st.selectbox(
-            "3. Filtra por Carencia:",
-            options=["Todas las carencias"] + list(nombres_carencias.values())
-        )
+        opcion_carencia_display = st.selectbox("3. Filtra por Carencia:", options=["Todas las carencias"] + list(nombres_carencias.values()))
         carencia_seleccionada = next((key for key, value in nombres_carencias.items() if value == opcion_carencia_display), "Todas las carencias")
 
     rango_edad = st.slider("4. Selecciona Rango de Edad:", min_value=0, max_value=90, value=(0, 90))
     st.divider()
 
-    # --- Lógica de filtrado ---
+    # Lógica de filtrado
     df_filtrado = df_personas.copy()
     if colonia_seleccionada != "Todas":
         df_filtrado = df_filtrado[df_filtrado["Colonia"] == colonia_seleccionada]
@@ -300,36 +318,14 @@ with tab2:
         df_filtrado = df_filtrado[df_filtrado["Sexo"] == sexo_seleccionado]
     df_filtrado = df_filtrado[df_filtrado["Edad"].between(rango_edad[0], rango_edad[1])]
 
-    # --- Lógica de Visualización ---
+    # Lógica de Visualización
     if df_filtrado.empty:
         st.warning("No se encontraron registros con los criterios seleccionados.")
-# --- NUEVA SECCIÓN: GRÁFICA DE PROGRAMAS SOCIALES ---
-    st.divider()
-    st.subheader("Beneficiarios por Programa Social (Muestra)")
-
-    # --- DATOS FIJOS PARA LA NUEVA GRÁFICA ---
-    datos_fijos_programas = {
-        "Jóvenes Construyendo el Futuro": 628,
-        "Beca Benito Juárez": 386,
-        "Beca Rita Cetina": 383,
-        "Pensión 65+": 153,
-        "Mujeres Bienestar": 88
-    }
-
-    conteo_programas = pd.Series(datos_fijos_programas)
-
-    fig_programas = px.bar(
-        conteo_programas,
-        x=conteo_programas.values,
-        y=conteo_programas.index,
-        orientation='h',
-        title="Personas Beneficiarias por Programa",
-        labels={'x': 'Número de Beneficiarios', 'y': 'Programa Social'},
-        text_auto=True
-    )
-    fig_programas.update_layout(showlegend=False, yaxis={'categoryorder':'total ascending'})
-    fig_programas.update_traces(marker_color='#4d100d')
-    st.plotly_chart(fig_programas, use_container_width=True)
+    elif carencia_seleccionada != "Todas las carencias":
+        nombre_amigable = nombres_carencias[carencia_seleccionada]
+        st.subheader(f"Población Objetivo: {nombre_amigable}")
+        
+        df_objetivo = df_filtrado[df_filtrado[carencia_seleccionada] == 1]
         
         if df_objetivo.empty:
             st.info("No hay personas con esta carencia en la selección actual.")
@@ -347,20 +343,18 @@ with tab2:
                 st.download_button(label="📥 Descargar Reporte en CSV", data=csv, file_name=f'reporte.csv', mime='text/csv', use_container_width=True)
             with col_accion2:
                 st.link_button("📨 Enviar Comunicación / Gestionar", "https://construir-comunidad.bubbleapps.io/version-test/dashboard-admin", help="Abre la plataforma de gestión.", type="primary", use_container_width=True)
-    else:
-        st.subheader("Vista General de Carencias")
-        conteo_carencias = df_filtrado[lista_carencias].sum().sort_values(ascending=False)
-        conteo_carencias.index = conteo_carencias.index.map(nombres_carencias)
-        fig_ranking = px.bar(conteo_carencias, x=conteo_carencias.values, y=conteo_carencias.index, orientation='h', title=f"Ranking de Carencias en: {colonia_seleccionada}", labels={'x': 'Número de Personas', 'y': 'Carencia Social'}, text_auto=True, color=conteo_carencias.values, color_continuous_scale=['#f9e5e4', '#4d100d'])
-        fig_ranking.update_layout(coloraxis_showscale=False)
-        st.plotly_chart(fig_ranking, use_container_width=True)
+    else: # Si están seleccionadas "Todas las carencias"
+        st.info("👆 Utiliza los filtros de arriba para identificar y analizar un grupo específico de la población.")
 
+    # El mapa de calor se muestra si están seleccionadas "Todas" las colonias
     if colonia_seleccionada == "Todas":
-        st.subheader("Mapa de Calor: Carencias por Colonia")
+        st.subheader("Mapa de Calor: Carencias por Colonia (Dinámico)")
         heatmap_data = df_filtrado.groupby("Colonia")[lista_carencias].mean()
         heatmap_data.columns = heatmap_data.columns.map(nombres_carencias)
-        fig_heatmap = px.imshow(heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds", title="Porcentaje de Población con cada Carencia por Colonia")
+        fig_heatmap = px.imshow(heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds")
         st.plotly_chart(fig_heatmap, use_container_width=True)
+
+    
 
 # --- PESTAÑA 3: Con Perfil Demográfico para el Grupo Sin Cobertura ---
 with tab3:
