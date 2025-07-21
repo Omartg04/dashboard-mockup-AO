@@ -115,10 +115,10 @@ st.markdown("Este es un ejemplo con **datos ficticios** para validar las funcion
 
 # --- CREACIÓN DE PESTAÑAS ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📈 Pulso del Censo", 
-    "🩺 Radiografía de Carencias", 
-    "☂️ Cobertura de Programas Sociales", 
-    "🗺️ Mapa Interactivo"
+    "📈 Pulso General",
+    "🎯 Identificación",
+    "☂️ Cobertura",
+    "🗺️ Mapa Operativo",
     "🏘️ Casas Obregonenses"
 ])
 
