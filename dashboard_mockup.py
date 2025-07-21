@@ -65,6 +65,52 @@ def generar_datos_ficticios(num_registros=2500):
     df['Tiene_Programa_Social'] = df['Programa_Asignado'].apply(lambda x: 0 if x == 'Ninguno' else 1)
     return df
 
+
+@st.cache_data
+def generar_datos_manzana(num_registros=200):
+    """
+    Crea un DataFrame de ejemplo con datos de avance por manzana.
+    """
+    data = []
+    colonias_data = {
+        "Lomas de Becerra": ["10370", "10371"],
+        "Liberación Proletaria": ["10347", "10348"],
+        "Hidalgo": ["10031"]
+    }
+    
+    for i in range(num_registros):
+        colonia = np.random.choice(list(colonias_data.keys()))
+        ageb = np.random.choice(colonias_data[colonia])
+        manzana = f"{np.random.randint(1, 50):03d}"
+        
+        total_viviendas = np.random.randint(10, 50)
+        viviendas_censadas = np.random.randint(0, total_viviendas)
+        porcentaje = (viviendas_censadas / total_viviendas) if total_viviendas > 0 else 0
+        
+        if porcentaje <= 0.25:
+            estatus = "0% - 25%"
+        elif porcentaje <= 0.50:
+            estatus = "25.1% - 50%"
+        elif porcentaje <= 0.75:
+            estatus = "50.1% - 75%"
+        else:
+            estatus = "75.1% - 100%"
+
+        data.append({
+            "AGEB": ageb,
+            "Manzana": manzana,
+            "Colonia": colonia,
+            "Total de Viviendas Habitadas": total_viviendas,
+            "Viviendas Censadas": viviendas_censadas,
+            "Viviendas Pendientes de Cita": np.random.randint(0, 5),
+            "Entrevistas Rechazadas": np.random.randint(0, 2),
+            "Porcentaje de Censado": f"{porcentaje:.1%}",
+            "Estatus de Censado": estatus
+        })
+        
+    return pd.DataFrame(data)
+
+
 # --- CARGA DE DATOS ---
 df = generar_datos_ficticios()
 
@@ -114,6 +160,63 @@ with tab1:
     
     st.divider()
 
+# --- NUEVA SECCIÓN DENTRO DE UN DESPLEGABLE ---
+    with st.expander("🏘️ Ver Detalle de Avance Territorial por Manzana"):
+        
+        # --- FILTROS ---
+        st.markdown("##### Filtros de Análisis Territorial")
+        col_filtro1, col_filtro2 = st.columns(2)
+        with col_filtro1:
+            colonias_seleccionadas = st.multiselect(
+                "Selecciona Colonias:",
+                options=df_manzanas["Colonia"].unique(),
+                default=df_manzanas["Colonia"].unique(),
+                key="manzana_colonias"
+            )
+        with col_filtro2:
+            estatus_seleccionado = st.multiselect(
+                "Selecciona Estatus de Avance:",
+                options=df_manzanas["Estatus de Censado"].unique(),
+                default=df_manzanas["Estatus de Censado"].unique(),
+                key="manzana_estatus"
+            )
+        
+        df_filtrado_manzanas = df_manzanas[
+            (df_manzanas["Colonia"].isin(colonias_seleccionadas)) &
+            (df_manzanas["Estatus de Censado"].isin(estatus_seleccionado))
+        ]
+        
+        # --- INDICADORES CLAVE (KPIs) ---
+        kpi1, kpi2, kpi3 = st.columns(3)
+        df_filtrado_manzanas['Porcentaje_Num'] = df_filtrado_manzanas['Porcentaje de Censado'].str.replace('%', '').astype(float) / 100
+        avance_promedio = df_filtrado_manzanas['Porcentaje_Num'].mean()
+
+        kpi1.metric("Manzanas en Selección", value=f"{len(df_filtrado_manzanas):,}")
+        kpi2.metric("Total de Viviendas", value=f"{df_filtrado_manzanas['Total de Viviendas Habitadas'].sum():,}")
+        kpi3.metric("Avance Promedio", value=f"{avance_promedio:.1%}")
+
+        # --- GRÁFICO DE RESUMEN ---
+        st.markdown("##### Distribución de Manzanas por Estatus")
+        conteo_estatus = df_filtrado_manzanas["Estatus de Censado"].value_counts()
+        fig_estatus = px.bar(
+            conteo_estatus,
+            x=conteo_estatus.index,
+            y=conteo_estatus.values,
+            labels={'x': 'Estatus de Censado', 'y': 'Número de Manzanas'},
+            color=conteo_estatus.index,
+            text_auto=True
+        )
+        fig_estatus.update_layout(showlegend=False)
+        st.plotly_chart(fig_estatus, use_container_width=True)
+
+        # --- TABLA DE DATOS DETALLADA ---
+        st.markdown("##### Detalle de Manzanas Seleccionadas")
+        st.dataframe(
+            df_filtrado_manzanas.drop(columns=['Porcentaje_Num']),
+            use_container_width=True
+        )
+
+    
     # --- NUEVA SECCIÓN: ANÁLISIS DE DATOS DE CONTACTO (CON DATOS FIJOS) ---
     st.subheader("Calidad de Datos de Contacto")
 
