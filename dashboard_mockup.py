@@ -418,7 +418,7 @@ with tab4:
     # ... (código de filtros sin cambios) ...
     col1, col2 = st.columns(2)
     with col1:
-        colonia_mapa = st.selectbox( "Colonia a visualizar:", options=sorted(df["Colonia"].unique()), key="map_colonia", index=list(sorted(df["Colonia"].unique())).index("Barrio Norte") )
+        colonia_mapa = st.selectbox( "Colonia a visualizar:", options=sorted(df_personas["Colonia"].unique()), key="map_colonia", index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte") )
     with col2:
         carencia_mapa = st.selectbox( "Carencia a visualizar:", options=lista_carencias, key="map_carencia", index=lista_carencias.index("Acceso_Salud") )
     
