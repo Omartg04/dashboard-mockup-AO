@@ -344,6 +344,35 @@ with tab2:
 with tab3:
     st.header("Análisis de Cobertura y Seguimiento")
 
+    # --- NUEVA SECCIÓN: GRÁFICA DE PROGRAMAS SOCIALES ---
+    st.divider()
+    st.subheader("Beneficiarios por Programa Social (Muestra)")
+
+    # --- DATOS FIJOS PARA LA NUEVA GRÁFICA ---
+    datos_fijos_programas = {
+        "Jóvenes Construyendo el Futuro": 628,
+        "Beca Benito Juárez": 386,
+        "Beca Rita Cetina": 383,
+        "Pensión 65+": 153,
+        "Mujeres Bienestar": 88
+    }
+
+    conteo_programas = pd.Series(datos_fijos_programas)
+
+    fig_programas = px.bar(
+        conteo_programas,
+        x=conteo_programas.values,
+        y=conteo_programas.index,
+        orientation='h',
+        title="Personas Beneficiarias por Programa",
+        labels={'x': 'Número de Beneficiarios', 'y': 'Programa Social'},
+        text_auto=True
+    )
+    fig_programas.update_layout(showlegend=False, yaxis={'categoryorder':'total ascending'})
+    fig_programas.update_traces(marker_color='#4d100d')
+    st.plotly_chart(fig_programas, use_container_width=True)
+    
+    
     # --- SECCIÓN 1: ANÁLISIS GENERAL DE COBERTURA ---
     st.subheader("Análisis General de Cobertura por Programa")
     
