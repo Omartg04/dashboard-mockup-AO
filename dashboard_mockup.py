@@ -339,7 +339,7 @@ with tab3:
     with col1:
         colonia_cobertura = st.selectbox(
             "Selecciona una Colonia:",
-            options=sorted(df["Colonia"].unique()),
+            options=sorted(df_personas["Colonia"].unique()),
             key="coverage_colonia",
             index=list(sorted(df["Colonia"].unique())).index("Barrio Norte")
         )
