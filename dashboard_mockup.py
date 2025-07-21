@@ -10,105 +10,97 @@ st.set_page_config(
     page_icon="🗺️",
     layout="wide",
 )
-
-      
+     
 
 # --- FUNCIÓN PARA GENERAR DATOS FICTICIOS ---
 
+# --- FUNCIÓN DE GENERACIÓN DE DATOS UNIFICADA ---
+
 @st.cache_data
-def generar_datos_ficticios(num_registros=2500):
+def generar_datos_unificados(num_manzanas_por_colonia=15):
     """
-    Versión final que añade un estatus operativo a cada persona.
+    Crea y devuelve dos DataFrames consistentes: uno de manzanas y otro de personas.
     """
-    colonias = ["Barrio Norte", "Jalalpa", "Lomas de Becerra S1", "El Rodeo", "Golondrinas", "Tlacoyaque", "Santa Lucía"]  
+    # 1. UNIVERSO DE DATOS (ÚNICA FUENTE DE VERDAD)
+    colonias_data = {
+        "Barrio Norte": ["10350"],
+        "Jalalpa": ["10400", "10401"],
+        "Lomas de Becerra S1": ["10370"],
+        "El Rodeo": ["10500"],
+        "Golondrinas": ["10510"],
+        "Tlacoyaque": ["10600"],
+        "Santa Lucía": ["10700"]
+    }
     programas = ["Beca Benito Juárez", "Pensión Adulto Mayor", "IMSS Bienestar", "Beca Rita Cetina", "Ninguno"]
     estatus_operativos = ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"]
+    
+    # --- 2. GENERAR DATOS DE MANZANAS ---
+    manzanas_list = []
+    for colonia, agebs in colonias_data.items():
+        for ageb in agebs:
+            for i in range(num_manzanas_por_colonia):
+                manzana_id = f"{ageb}-{i:02d}"
+                total_viviendas = np.random.randint(10, 50)
+                viviendas_censadas = np.random.randint(0, total_viviendas)
+                porcentaje = (viviendas_censadas / total_viviendas) if total_viviendas > 0 else 0
+                
+                if porcentaje <= 0.25: estatus_censado = "0% - 25%"
+                elif porcentaje <= 0.50: estatus_censado = "25.1% - 50%"
+                elif porcentaje <= 0.75: estatus_censado = "50.1% - 75%"
+                else: estatus_censado = "75.1% - 100%"
 
-    data = []
-    # Inyectar casos específicos para la narrativa
+                manzanas_list.append({
+                    "ID_Manzana": manzana_id, "AGEB": ageb, "Manzana": f"{i:02d}", "Colonia": colonia,
+                    "Total de Viviendas Habitadas": total_viviendas, "Viviendas Censadas": viviendas_censadas,
+                    "Viviendas Pendientes de Cita": np.random.randint(0, 5), "Entrevistas Rechazadas": np.random.randint(0, 2),
+                    "Porcentaje de Censado": f"{porcentaje:.1%}", "Estatus de Censado": estatus_censado
+                })
+    df_manzanas = pd.DataFrame(manzanas_list)
+
+    # --- 3. GENERAR DATOS DE PERSONAS BASADOS EN LAS MANZANAS ---
+    personas_list = []
+    # Inyectar casos de la narrativa en la primera manzana de Barrio Norte
+    manzana_narrativa = df_manzanas[df_manzanas["Colonia"] == "Barrio Norte"].iloc[0]
     for _ in range(20):
-        data.append({
-            # ... (resto de la inyección de datos sin cambios) ...
-            "ID": np.random.randint(9000, 9999), "Colonia": "Barrio Norte", "Latitud": 19.38 + np.random.normal(0, 0.001), "Longitud": -99.18 + np.random.normal(0, 0.001),
-            "Edad": np.random.randint(24, 36), "Sexo": "Femenino", "Tiene_Bebes": 1, "Es_Adulto_Mayor": 0, "Rezago_Educativo": 0, "Acceso_Salud": 1, 
+        personas_list.append({
+            "ID": np.random.randint(9000, 9999), "Colonia": "Barrio Norte", "ID_Manzana": manzana_narrativa["ID_Manzana"],
+            "Latitud": 19.38 + np.random.normal(0, 0.001), "Longitud": -99.18 + np.random.normal(0, 0.001),
+            "Edad": np.random.randint(24, 36), "Sexo": "Femenino", "Tiene_Bebes": 1, "Es_Adulto_Mayor": 0, "Rezago_Educativo": 0, "Acceso_Salud": 1,
             "Seguridad_Social": 1, "Calidad_Vivienda": 0, "Servicios_Vivienda": 0, "Acceso_Alimentacion": 0,
             "Programa_Asignado": np.random.choice(["IMSS Bienestar", "Ninguno"], p=[0.4, 0.6]),
-            # Asignar estatus operativo al grupo de la narrativa
             "Estatus_Operativo": np.random.choice(estatus_operativos)
         })
 
-    # Generar el resto de los datos aleatorios
-    for i in range(num_registros - 20):
-        # ... (resto del bucle for principal sin cambios) ...
-        edad = np.random.randint(0, 90)
-        rezago_edu = np.random.choice([0, 1], p=[0.7, 0.3])
-        acceso_salud_rand = np.random.choice([0, 1], p=[0.6, 0.4])
-        programa_asignado = "Ninguno"
-        estatus = "No aplica"
-        if edad >= 65 and np.random.rand() > 0.3: programa_asignado = "Pensión Adulto Mayor"; estatus = "Cubierto"
-        elif rezago_edu == 1 and edad < 25 and np.random.rand() > 0.5: programa_asignado = np.random.choice(["Beca Benito Juárez", "Beca Rita Cetina"]); estatus = "Cubierto"
-        elif acceso_salud_rand == 1 and np.random.rand() > 0.6: programa_asignado = "IMSS Bienestar"; estatus = "Cubierto"
-        else: estatus = np.random.choice(estatus_operativos) # Si no tiene programa, tiene un estatus operativo
-        data.append({
-            "ID": 1000 + i, "Colonia": np.random.choice(colonias),
-            "Latitud": 19.35 + np.random.normal(0, 0.05), "Longitud": -99.22 + np.random.normal(0, 0.05),
-            "Edad": edad, "Sexo": np.random.choice(["Masculino", "Femenino"]),
-            "Tiene_Bebes": 1 if 18 <= edad <= 45 and np.random.rand() > 0.8 else 0, "Es_Adulto_Mayor": 1 if edad >= 65 else 0,
-            "Rezago_Educativo": rezago_edu, "Acceso_Salud": acceso_salud_rand,
-            "Seguridad_Social": np.random.choice([0, 1], p=[0.5, 0.5]), "Calidad_Vivienda": np.random.choice([0, 1], p=[0.8, 0.2]),
-            "Servicios_Vivienda": np.random.choice([0, 1], p=[0.85, 0.15]), "Acceso_Alimentacion": np.random.choice([0, 1], p=[0.75, 0.25]),
-            "Programa_Asignado": programa_asignado,
-            "Estatus_Operativo": estatus, # Nueva columna
-        })
-        
-    df = pd.DataFrame(data)
-    df['Tiene_Programa_Social'] = df['Programa_Asignado'].apply(lambda x: 0 if x == 'Ninguno' else 1)
-    return df
-
-
-@st.cache_data
-def generar_datos_manzana(num_registros=200):
-    """
-    Crea un DataFrame de ejemplo con datos de avance por manzana.
-    """
-    data = []
-    colonias_data = {
-        "Lomas de Becerra": ["10370", "10371"],
-        "Liberación Proletaria": ["10347", "10348"],
-        "Hidalgo": ["10031"]
-    }
+    # Generar el resto de las personas
+    for _, manzana_row in df_manzanas.iterrows():
+        # Generar personas para las viviendas censadas en cada manzana
+        for i in range(manzana_row["Viviendas Censadas"]):
+            edad = np.random.randint(0, 90)
+            rezago_edu = np.random.choice([0, 1], p=[0.7, 0.3])
+            acceso_salud_rand = np.random.choice([0, 1], p=[0.6, 0.4])
+            programa_asignado = "Ninguno"
+            estatus = np.random.choice(estatus_operativos)
+            if edad >= 65 and np.random.rand() > 0.3: programa_asignado, estatus = "Pensión Adulto Mayor", "Cubierto"
+            elif rezago_edu == 1 and edad < 25 and np.random.rand() > 0.5: programa_asignado, estatus = np.random.choice(["Beca Benito Juárez", "Beca Rita Cetina"]), "Cubierto"
+            elif acceso_salud_rand == 1 and np.random.rand() > 0.6: programa_asignado, estatus = "IMSS Bienestar", "Cubierto"
+            
+            personas_list.append({
+                "ID": int(f"{manzana_row['AGEB']}{i}"), "Colonia": manzana_row["Colonia"], "ID_Manzana": manzana_row["ID_Manzana"],
+                "Latitud": 19.35 + np.random.normal(0, 0.05), "Longitud": -99.22 + np.random.normal(0, 0.05),
+                "Edad": edad, "Sexo": np.random.choice(["Masculino", "Femenino"]),
+                "Tiene_Bebes": 1 if 18 <= edad <= 45 and np.random.rand() > 0.8 else 0, "Es_Adulto_Mayor": 1 if edad >= 65 else 0,
+                "Rezago_Educativo": rezago_edu, "Acceso_Salud": acceso_salud_rand,
+                "Seguridad_Social": np.random.choice([0, 1], p=[0.5, 0.5]), "Calidad_Vivienda": np.random.choice([0, 1], p=[0.8, 0.2]),
+                "Servicios_Vivienda": np.random.choice([0, 1], p=[0.85, 0.15]), "Acceso_Alimentacion": np.random.choice([0, 1], p=[0.75, 0.25]),
+                "Programa_Asignado": programa_asignado, "Estatus_Operativo": estatus,
+            })
+            
+    df_personas = pd.DataFrame(personas_list)
+    df_personas['Tiene_Programa_Social'] = df_personas['Programa_Asignado'].apply(lambda x: 0 if x == 'Ninguno' else 1)
     
-    for i in range(num_registros):
-        colonia = np.random.choice(list(colonias_data.keys()))
-        ageb = np.random.choice(colonias_data[colonia])
-        manzana = f"{np.random.randint(1, 50):03d}"
-        
-        total_viviendas = np.random.randint(10, 50)
-        viviendas_censadas = np.random.randint(0, total_viviendas)
-        porcentaje = (viviendas_censadas / total_viviendas) if total_viviendas > 0 else 0
-        
-        if porcentaje <= 0.25:
-            estatus = "0% - 25%"
-        elif porcentaje <= 0.50:
-            estatus = "25.1% - 50%"
-        elif porcentaje <= 0.75:
-            estatus = "50.1% - 75%"
-        else:
-            estatus = "75.1% - 100%"
+    # 4. Devolver AMBOS DataFrames
+    return df_manzanas, df_personas
 
-        data.append({
-            "AGEB": ageb,
-            "Manzana": manzana,
-            "Colonia": colonia,
-            "Total de Viviendas Habitadas": total_viviendas,
-            "Viviendas Censadas": viviendas_censadas,
-            "Viviendas Pendientes de Cita": np.random.randint(0, 5),
-            "Entrevistas Rechazadas": np.random.randint(0, 2),
-            "Porcentaje de Censado": f"{porcentaje:.1%}",
-            "Estatus de Censado": estatus
-        })
-        
-    return pd.DataFrame(data)
 
 
 # --- CARGA DE DATOS ---
