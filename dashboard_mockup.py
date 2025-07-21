@@ -397,7 +397,7 @@ with tab3:
     
     # ... (El resto del código del funnel se queda exactamente igual) ...
     st.markdown(f"**Seguimiento para el programa '{programa_cobertura}' en la colonia '{colonia_cobertura}'**")
-    df_seguimiento = df[df["Colonia"] == colonia_cobertura]
+    df_seguimiento = df_personas[df_personas["Colonia"] == colonia_cobertura]
     conteo_estatus = df_seguimiento["Estatus_Operativo"].value_counts()
     data_funnel = {
         'Estatus': ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"],
