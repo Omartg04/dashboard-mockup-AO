@@ -424,10 +424,10 @@ with tab4:
     
     st.divider()
     
-    df_mapa_operativo = df[
-        (df["Colonia"] == colonia_mapa) &
-        (df[carencia_mapa] == 1) &
-        (df["Programa_Asignado"] == "Ninguno") # Solo mostramos a los pendientes en el mapa
+    df_mapa_operativo = df_personas[
+        (df_personas["Colonia"] == colonia_mapa) &
+        (df_personas[carencia_mapa] == 1) &
+        (df_personas["Programa_Asignado"] == "Ninguno") # Solo mostramos a los pendientes en el mapa
     ]
     
     # --- LEYENDA DEL MAPA MEJORADA Y A PRUEBA DE FALLOS ---
