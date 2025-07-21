@@ -12,8 +12,6 @@ st.set_page_config(
 )
      
 
-# --- FUNCIÓN PARA GENERAR DATOS FICTICIOS ---
-
 # --- FUNCIÓN DE GENERACIÓN DE DATOS UNIFICADA ---
 
 @st.cache_data
@@ -105,16 +103,23 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
 
 # --- CARGA DE DATOS ---
 df_manzanas, df_personas = generar_datos_unificados()
+CASAS_OBREGONENSES = {
+    "Casa Comunitaria La Cebada": {"lat": 19.3512, "lon": -99.2560},
+    "Biblioteca Pública José Revueltas": {"lat": 19.3539, "lon": -99.2009},
+    "Gimnasio Torres de Potrero": {"lat": 19.3406, "lon": -99.2452}
+}
+
 # --- TÍTULO PRINCIPAL ---
 st.title("📊 Seguimiento CENSO PAPE Álvaro Obregón")
 st.markdown("Este es un ejemplo con **datos ficticios** para validar las funcionalidades clave en el taller de discovery.")
 
 # --- CREACIÓN DE PESTAÑAS ---
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Pulso del Censo", 
     "🩺 Radiografía de Carencias", 
     "☂️ Cobertura de Programas Sociales", 
     "🗺️ Mapa Interactivo"
+    "🏘️ Casas Obregonenses"
 ])
 
 
@@ -524,3 +529,47 @@ with tab4:
 
         view_state = pdk.ViewState( latitude=df_mapa_operativo["Latitud"].mean(), longitude=df_mapa_operativo["Longitud"].mean(), zoom=14, pitch=50 )
         st.pydeck_chart(pdk.Deck(map_style="mapbox://styles/mapbox/dark-v10", initial_view_state=view_state, layers=layers))
+
+# --- PESTAÑA 5: ANÁLISIS DE DEMANDA ALREDEDOR DE CASAS OBREGONENSES ---
+with tab5:
+    st.header("Análisis de Necesidades alrededor de Centros Comunitarios")
+    st.markdown("Identifica la demanda potencial de servicios en el área de influencia de cada centro.")
+
+    # --- DATOS DE LAS CASAS (asegúrate que este diccionario esté definido al principio del script) ---
+    df_casas = pd.DataFrame.from_dict(CASAS_OBREGONENSES, orient='index').reset_index().rename(columns={'index': 'nombre'})
+
+    # --- FILTROS ---
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        casa_seleccionada_nombre = st.selectbox("Selecciona un Centro Comunitario:", options=df_casas["nombre"])
+    with col2:
+        radio_km = st.slider("Selecciona un radio de búsqueda (km):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
+    with col3:
+        carencia_seleccionada_casas = st.selectbox("Selecciona una Carencia a analizar:", options=list(nombres_carencias.values()), key="casas_carencia")
+        carencia_key_casas = next((key for key, value in nombres_carencias.items() if value == carencia_seleccionada_casas), None)
+
+    st.divider()
+
+    # --- LÓGICA DE CÁLCULO DE PROXIMIDAD ---
+    def haversine(lon1, lat1, lon2, lat2):
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        dlon = lon2 - lon1; dlat = lat2 - lat1
+        a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
+        c = 2 * np.arcsin(np.sqrt(a))
+        return 6371 * c
+
+    casa_seleccionada_coords = CASAS_OBREGONENSES[casa_seleccionada_nombre]
+    df_personas['distancia_km'] = haversine(casa_seleccionada_coords['lon'], casa_seleccionada_coords['lat'], df_personas['Longitud'], df_personas['Latitud'])
+    df_cercanos = df_personas[df_personas['distancia_km'] <= radio_km]
+    df_demanda = df_cercanos[df_cercanos[carencia_key_casas] == 1] if carencia_key_casas else pd.DataFrame()
+
+    # --- RESULTADOS Y VISUALIZACIÓN ---
+    st.subheader(f"Análisis para '{casa_seleccionada_nombre}'")
+    if df_demanda.empty:
+        st.warning(f"No se encontraron personas con '{carencia_seleccionada_casas}' en un radio de {radio_km} km.")
+    else:
+        st.metric(label=f"Personas con {carencia_seleccionada_casas}", value=f"{len(df_demanda)}", help=f"Dentro de un radio de {radio_km} km.")
+        capa_casa = pdk.Layer("ScatterplotLayer", data=df_casas[df_casas["nombre"] == casa_seleccionada_nombre], get_position="[lon, lat]", get_color="[255, 215, 0, 255]", get_radius=100, pickable=True, tooltip={"text": "{nombre}"})
+        capa_demanda = pdk.Layer("ScatterplotLayer", data=df_demanda, get_position="[Longitud, Latitud]", get_color="[214, 39, 40, 160]", get_radius=25, pickable=True, tooltip={"text": "ID: {ID}\nEdad: {Edad}"})
+        view_state = pdk.ViewState(latitude=casa_seleccionada_coords['lat'], longitude=casa_seleccionada_coords['lon'], zoom=14, pitch=50)
+        st.pydeck_chart(pdk.Deck(map_style="mapbox://styles/mapbox/dark-v10", initial_view_state=view_state, layers=[capa_casa, capa_demanda]))
