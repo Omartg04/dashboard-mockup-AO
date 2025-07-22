@@ -511,7 +511,7 @@ with tab4:
         
 # --- CAMBIO DE ESTILO DEL MAPA (MÉTODO DIRECTO) ---
         st.pydeck_chart(pdk.Deck(
-            map_style=mapbox://styles/mapbox/outdoors-v11,
+            map_style="mapbox://styles/mapbox/outdoors-v11",
             initial_view_state=view_state,
             layers=layers,
             # --- AÑADE ESTA LÍNEA CON TU CLAVE ---
