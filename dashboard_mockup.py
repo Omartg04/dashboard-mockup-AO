@@ -564,7 +564,7 @@ with tab5:
         view_state = pdk.ViewState(latitude=casa_seleccionada_coords['lat'], longitude=casa_seleccionada_coords['lon'], zoom=14, pitch=50)
        # --- CAMBIO DE ESTILO DEL MAPA (MÉTODO DIRECTO) ---
         st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/outdoors-v11",
+            map_style="mapbox://styles/mapbox/satellite-streets-v11",
             initial_view_state=view_state,
             layers=layers,
             # --- AÑADE ESTA LÍNEA CON TU CLAVE ---
