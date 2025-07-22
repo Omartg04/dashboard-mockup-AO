@@ -444,63 +444,80 @@ with tab3:
 
 
 
-# --- PESTAÑA 4: Mapa Operativo con Leyenda Mejorada ---
+# --- PESTAÑA 4: MAPA OPERATIVO (VINCULADO AL FUNNEL) ---
 with tab4:
-    st.header("Mapa de Seguimiento Operativo")
-    st.markdown("Visualiza el estatus de contacto de la población objetivo en el territorio.")
+    st.header("Mapa de Seguimiento Operativo del Funnel")
+    st.markdown("Visualización geográfica del avance de afiliación para la población sin programa.")
     
-    # ... (código de filtros sin cambios) ...
+    # --- Filtros ---
     col1, col2 = st.columns(2)
     with col1:
-        colonia_mapa = st.selectbox( "Colonia a visualizar:", options=sorted(df_personas["Colonia"].unique()), key="map_colonia", index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte") )
+        colonia_mapa = st.selectbox(
+            "Colonia a visualizar:",
+            options=sorted(df_personas["Colonia"].unique()),
+            key="map_op_colonia",
+            index=list(sorted(df_personas["Colonia"].unique())).index("Barrio Norte")
+        )
     with col2:
-        carencia_mapa = st.selectbox( "Carencia a visualizar:", options=lista_carencias, key="map_carencia", index=lista_carencias.index("Acceso_Salud") )
-    
+        carencia_mapa = st.selectbox(
+            "Carencia a analizar:",
+            options=list(nombres_carencias.values()),
+            key="map_op_carencia",
+            index=list(nombres_carencias.values()).index("Carencia de Acceso a la Salud")
+        )
+        carencia_key_mapa = next((key for key, value in nombres_carencias.items() if value == carencia_mapa), None)
+
     st.divider()
     
+    # Filtrar la población objetivo que NO está cubierta
     df_mapa_operativo = df_personas[
         (df_personas["Colonia"] == colonia_mapa) &
-        (df_personas[carencia_mapa] == 1) &
-        (df_personas["Programa_Asignado"] == "Ninguno") # Solo mostramos a los pendientes en el mapa
+        (df_personas[carencia_key_mapa] == 1) &
+        (df_personas["Programa_Asignado"] == "Ninguno")
     ]
     
-    # --- LEYENDA DEL MAPA MEJORADA Y A PRUEBA DE FALLOS ---
-    st.markdown("#### Leyenda de Estatus de Contacto")
-    # Usamos Emojis y texto, que siempre se renderizan correctamente.
+    # --- Leyenda del Mapa (vinculada a los estatus del funnel) ---
+    st.markdown("#### Leyenda de Estatus del Funnel")
     st.markdown("""
-    - 🔴 **Por contactar**
-    - 🟠 **Pre-registro completo**
-    - 🔵 **Cita generada**
-    - 🟢 **Visita programada**
+    - 🔴 **Por contactar** (Inicio del funnel)
+    - 🟠 **Personas contactadas**
+    - 🔵 **Personas con visita de promotor**
+    - 🟢 **Personas con afiliación al programa** (Éxito del funnel)
     """)
     st.divider()
 
     if df_mapa_operativo.empty:
         st.info("No hay población pendiente de contactar en esta selección.")
     else:
-        # Mapeo de estatus a un color
+        # Mapeo de los nuevos estatus a colores
         colors = {
             "Por contactar": [214, 39, 40], # Rojo
-            "Pre-registro completo": [255, 127, 14], # Naranja
-            "Cita generada": [31, 119, 180], # Azul
-            "Visita programada": [44, 160, 44] # Verde
+            "Personas contactadas": [255, 127, 14], # Naranja
+            "Personas con visita de promotor": [31, 119, 180], # Azul
+            "Personas con afiliación al programa": [44, 160, 44] # Verde
         }
         
         layers = []
         for estatus, df_group in df_mapa_operativo.groupby('Estatus_Operativo'):
-            layers.append(pdk.Layer(
-                'ScatterplotLayer',
-                data=df_group,
-                get_position='[Longitud, Latitud]',
-                get_fill_color=colors.get(estatus, [128, 128, 128]), # Color gris si no se encuentra
-                get_radius=30,
-                radius_min_pixels=5,
-                pickable=True,
-                tooltip={"text": "Estatus: {Estatus_Operativo}\nID: {ID}"}
-            ))
+            if estatus in colors: # Solo graficar los estatus que tenemos en el funnel
+                layers.append(pdk.Layer(
+                    'ScatterplotLayer', data=df_group, get_position='[Longitud, Latitud]',
+                    get_fill_color=colors[estatus], get_radius=30,
+                    radius_min_pixels=5, pickable=True,
+                    tooltip={"text": "Estatus: {Estatus_Operativo}\nID: {ID}"}
+                ))
 
-        view_state = pdk.ViewState( latitude=df_mapa_operativo["Latitud"].mean(), longitude=df_mapa_operativo["Longitud"].mean(), zoom=14, pitch=50 )
-        st.pydeck_chart(pdk.Deck(map_style="mapbox://styles/mapbox/dark-v10", initial_view_state=view_state, layers=layers))
+        view_state = pdk.ViewState(latitude=df_mapa_operativo["Latitud"].mean(), longitude=df_mapa_operativo["Longitud"].mean(), zoom=14, pitch=50)
+        
+        # --- CAMBIO DE ESTILO DEL MAPA ---
+        st.pydeck_chart(pdk.Deck(
+            map_style="mapbox://styles/mapbox/dark-v10", # <--- MAPA OSCURO
+            initial_view_state=view_state, 
+            layers=layers
+        ))
+
+
+
 
 # --- PESTAÑA 5: ANÁLISIS DE DEMANDA ALREDEDOR DE CASAS OBREGONENSES ---
 with tab5:
