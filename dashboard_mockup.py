@@ -16,14 +16,18 @@ st.set_page_config(
 
 @st.cache_data
 def generar_datos_unificados(num_manzanas_por_colonia=15):
-    # ... (el código de esta función no cambia en la parte de manzanas) ...
-    # --- 1. UNIVERSO DE DATOS ---
+    """
+    Actualiza los estatus operativos para el nuevo funnel.
+    """
+    # 1. UNIVERSO DE DATOS (ÚNICA FUENTE DE VERDAD)
     colonias_data = {
         "Barrio Norte": ["10350"], "Jalalpa": ["10400", "10401"], "Lomas de Becerra S1": ["10370"],
         "El Rodeo": ["10500"], "Golondrinas": ["10510"], "Tlacoyaque": ["10600"], "Santa Lucía": ["10700"]
     }
     programas = ["Beca Benito Juárez", "Pensión Adulto Mayor", "IMSS Bienestar", "Beca Rita Cetina", "Ninguno"]
-    estatus_operativos = ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"]
+    # --- LISTA DE ESTATUS ACTUALIZADA ---
+    estatus_operativos = ["Por contactar", "Personas contactadas", "Personas con visita de promotor", "Personas con afiliación al programa"]
+    
     
     # --- 2. GENERAR DATOS DE MANZANAS ---
     manzanas_list = []
@@ -365,43 +369,12 @@ with tab2:
         fig_heatmap = px.imshow(heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds")
         st.plotly_chart(fig_heatmap, use_container_width=True)    
 
-    
-
-# --- PESTAÑA 3: Con Perfil Demográfico para el Grupo Sin Cobertura ---
+# --- PESTAÑA 3: COBERTURA Y FUNNEL DE AFILIACIÓN ---
 with tab3:
-    st.header("Análisis de Cobertura y Seguimiento")
+    st.header("Análisis de Cobertura y Seguimiento de Afiliación")
 
-    # --- NUEVA SECCIÓN: GRÁFICA DE PROGRAMAS SOCIALES ---
-    st.divider()
-    st.subheader("Personas sin Programa Social")
-
-    # --- DATOS FIJOS PARA LA NUEVA GRÁFICA ---
-    datos_fijos_programas = {
-        "Jóvenes Construyendo el Futuro": 628,
-        "Beca Benito Juárez": 386,
-        "Beca Rita Cetina": 383,
-        "Pensión 65+": 153,
-        "Mujeres Bienestar": 88
-    }
-
-    conteo_programas = pd.Series(datos_fijos_programas)
-
-    fig_programas = px.bar(
-        conteo_programas,
-        x=conteo_programas.values,
-        y=conteo_programas.index,
-        orientation='h',
-        title="Personas Sin Apoyo Social",
-        labels={'x': 'Número de Beneficiarios', 'y': 'Programa Social'},
-        text_auto=True
-    )
-    fig_programas.update_layout(showlegend=False, yaxis={'categoryorder':'total ascending'})
-    fig_programas.update_traces(marker_color='#4d100d')
-    st.plotly_chart(fig_programas, use_container_width=True)
-    
-    
     # --- SECCIÓN 1: ANÁLISIS GENERAL DE COBERTURA ---
-    st.subheader("Análisis General de Cobertura por Programa")
+    st.subheader("Cobertura General por Programa")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -422,7 +395,6 @@ with tab3:
     
     # --- Lógica de la Sección 1 ---
     df_colonia = df_personas[df_personas["Colonia"] == colonia_cobertura]
-    
     beneficiarios = df_colonia[df_colonia["Programa_Asignado"] == programa_cobertura]
     poblacion_sin_programa = df_colonia[df_colonia["Programa_Asignado"] == "Ninguno"]
     
@@ -430,53 +402,47 @@ with tab3:
     m1.metric(f"Beneficiarios de '{programa_cobertura}'", value=len(beneficiarios))
     m2.metric("Población Total SIN Programa", value=len(poblacion_sin_programa))
     
-    # Perfil de la población sin programa
-    if not poblacion_sin_programa.empty:
-        st.markdown(f"**Perfil de las {len(poblacion_sin_programa)} personas sin programa en {colonia_cobertura}:**")
-        
-        # --- NUEVA SECCIÓN DE MÉTRICAS DE PERFIL ---
-        # Calculamos las estadísticas demográficas
-        num_mujeres = len(poblacion_sin_programa[poblacion_sin_programa['Sexo'] == 'Femenino'])
-        num_hombres = len(poblacion_sin_programa[poblacion_sin_programa['Sexo'] == 'Masculino'])
-        edad_promedio = poblacion_sin_programa['Edad'].mean()
-
-        # Las mostramos en columnas
-        m_perfil1, m_perfil2, m_perfil3 = st.columns(3)
-        m_perfil1.metric("Mujeres", value=f"{num_mujeres}")
-        m_perfil2.metric("Hombres", value=f"{num_hombres}")
-        m_perfil3.metric("Edad Promedio", value=f"{edad_promedio:.1f} años")
-        # ---------------------------------------------
-
-        # Gráfico de carencias (existente)
-        st.markdown("**Carencias más comunes en este grupo:**")
-        conteo_estatus_sp = poblacion_sin_programa[lista_carencias].sum().sort_values(ascending=False)
-        fig_bar_sp = px.bar(
-            conteo_estatus_sp,
-            title="Carencias del Grupo Sin Cobertura"
-        )
-        fig_bar_sp.update_layout(showlegend=False, yaxis_title=None, xaxis_title="Num. de Personas")
-        fig_bar_sp.update_traces(marker_color='#b22e28')
-        st.plotly_chart(fig_bar_sp, use_container_width=True)
+    # Se eliminó la gráfica de barras de esta sección.
 
     st.divider()
 
-    # --- SECCIÓN 2: FUNNEL DE SEGUIMIENTO OPERATIVO (Sin cambios) ---
-    st.subheader("Funnel de Avance para un Programa Específico")
+    # --- SECCIÓN 2: FUNNEL DE SEGUIMIENTO CON NUEVA NARRATIVA ---
+    st.subheader(f"Funnel de Afiliación para '{programa_cobertura}'")
+    st.markdown(f"De las **{len(poblacion_sin_programa)}** personas sin programa en **{colonia_cobertura}**, este es el avance:")
+
+    # Contamos cuántas personas hay en cada nuevo estatus
+    conteo_estatus = poblacion_sin_programa["Estatus_Operativo"].value_counts()
     
-    # ... (El resto del código del funnel se queda exactamente igual) ...
-    st.markdown(f"**Seguimiento para el programa '{programa_cobertura}' en la colonia '{colonia_cobertura}'**")
-    df_seguimiento = df_personas[df_personas["Colonia"] == colonia_cobertura]
-    conteo_estatus = df_seguimiento["Estatus_Operativo"].value_counts()
+    # Preparamos los datos para el funnel en el orden correcto
+    afiliados = conteo_estatus.get("Personas con afiliación al programa", 0)
+    con_visita = afiliados + conteo_estatus.get("Personas con visita de promotor", 0)
+    contactados = con_visita + conteo_estatus.get("Personas contactadas", 0)
+    total_por_cubrir = contactados + conteo_estatus.get("Por contactar", 0)
+    
     data_funnel = {
-        'Estatus': ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"],
-        'Cantidad': [ conteo_estatus.get("Por contactar", 0), conteo_estatus.get("Pre-registro completo", 0), conteo_estatus.get("Cita generada", 0), conteo_estatus.get("Visita programada", 0) ]
+        'Estatus': [
+            "Total por cubrir",
+            "Personas contactadas",
+            "Personas con visita de promotor",
+            "Personas con afiliación al programa"
+        ],
+        'Cantidad': [total_por_cubrir, contactados, con_visita, afiliados]
     }
-    total_a_contactar = sum(data_funnel['Cantidad'])
-    data_funnel['Cantidad'].insert(0, total_a_contactar)
-    data_funnel['Estatus'].insert(0, 'Total Pendiente')
-    fig_funnel = px.funnel( data_funnel, x='Cantidad', y='Estatus', title=f"Avance de Cobertura en {colonia_cobertura}" )
-    fig_funnel.update_traces(marker={"color": ['#77100d', '#b22e28', '#d66058', '#f7b2ac', '#fdecea']})
-    st.plotly_chart(fig_funnel, use_container_width=True)
+    
+    # Mostramos el funnel solo si hay personas por cubrir
+    if total_por_cubrir > 0:
+        fig_funnel = px.funnel(
+            data_funnel,
+            x='Cantidad',
+            y='Estatus',
+            title=f"Avance de Afiliación a {programa_cobertura} en {colonia_cobertura}"
+        )
+        fig_funnel.update_traces(marker={"color": ['#77100d', '#b22e28', '#d66058', '#f7b2ac']})
+        st.plotly_chart(fig_funnel, use_container_width=True)
+    else:
+        st.success("¡No hay personas pendientes de afiliar en esta colonia!")    
+
+
 
 # --- PESTAÑA 4: Mapa Operativo con Leyenda Mejorada ---
 with tab4:
