@@ -521,17 +521,17 @@ with tab4:
 
 
 # --- PESTAÑA 5: ANÁLISIS DE DEMANDA ALREDEDOR DE CASAS OBREGONENSES ---
+# --- PESTAÑA 5: ANÁLISIS DE DEMANDA (CÓDIGO CORREGIDO) ---
 with tab5:
     st.header("Análisis de Necesidades alrededor de Centros Comunitarios")
     st.markdown("Identifica la demanda potencial de servicios en el área de influencia de cada centro.")
 
-    # --- DATOS DE LAS CASAS (asegúrate que este diccionario esté definido al principio del script) ---
-    df_casas = pd.DataFrame.from_dict(CASAS_OBREGONENSES, orient='index').reset_index().rename(columns={'index': 'nombre'})
-
+    # (El diccionario CASAS_OBREGONENSES debe estar definido al principio del script)
+    
     # --- FILTROS ---
     col1, col2, col3 = st.columns(3)
     with col1:
-        casa_seleccionada_nombre = st.selectbox("Selecciona un Centro Comunitario:", options=df_casas["nombre"])
+        casa_seleccionada_nombre = st.selectbox("Selecciona un Centro Comunitario:", options=list(CASAS_OBREGONENSES.keys()))
     with col2:
         radio_km = st.slider("Selecciona un radio de búsqueda (km):", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
     with col3:
@@ -541,6 +541,7 @@ with tab5:
     st.divider()
 
     # --- LÓGICA DE CÁLCULO DE PROXIMIDAD ---
+    # (La función haversine y los cálculos de df_demanda no cambian)
     def haversine(lon1, lat1, lon2, lat2):
         lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
         dlon = lon2 - lon1; dlat = lat2 - lat1
@@ -559,14 +560,42 @@ with tab5:
         st.warning(f"No se encontraron personas con '{carencia_seleccionada_casas}' en un radio de {radio_km} km.")
     else:
         st.metric(label=f"Personas con {carencia_seleccionada_casas}", value=f"{len(df_demanda)}", help=f"Dentro de un radio de {radio_km} km.")
-        capa_casa = pdk.Layer("ScatterplotLayer", data=df_casas[df_casas["nombre"] == casa_seleccionada_nombre], get_position="[lon, lat]", get_color="[255, 215, 0, 255]", get_radius=100, pickable=True, tooltip={"text": "{nombre}"})
-        capa_demanda = pdk.Layer("ScatterplotLayer", data=df_demanda, get_position="[Longitud, Latitud]", get_color="[214, 39, 40, 160]", get_radius=25, pickable=True, tooltip={"text": "ID: {ID}\nEdad: {Edad}"})
+
+        # --- CAMBIO IMPORTANTE: Crear un DataFrame solo para la casa seleccionada ---
+        df_casa_seleccionada = pd.DataFrame([{
+            "nombre": casa_seleccionada_nombre,
+            "lat": casa_seleccionada_coords['lat'],
+            "lon": casa_seleccionada_coords['lon']
+        }])
+
+        # Capa para la Casa Obregonense seleccionada (punto dorado)
+        capa_casa = pdk.Layer(
+            "ScatterplotLayer",
+            data=df_casa_seleccionada, # Usamos el nuevo DataFrame
+            get_position="[lon, lat]",
+            get_color="[255, 215, 0, 255]",
+            get_radius=100,
+            pickable=True,
+            tooltip={"text": "{nombre}"}
+        )
+        
+        # Capa para las personas con la necesidad (puntos rojos)
+        capa_demanda = pdk.Layer(
+            "ScatterplotLayer",
+            data=df_demanda,
+            get_position="[Longitud, Latitud]",
+            get_color="[214, 39, 40, 160]",
+            get_radius=25,
+            pickable=True,
+            tooltip={"text": "ID: {ID}\nEdad: {Edad}"}
+        )
+
         view_state = pdk.ViewState(latitude=casa_seleccionada_coords['lat'], longitude=casa_seleccionada_coords['lon'], zoom=14, pitch=50)
-       # --- CAMBIO DE ESTILO DEL MAPA (MÉTODO DIRECTO) ---
+        
         st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/light-v10",
+            map_style="mapbox://styles/mapbox/dark-v10",
             initial_view_state=view_state,
-            layers=layers,
-            # --- AÑADE ESTA LÍNEA CON TU CLAVE ---
+            # --- CAMBIO IMPORTANTE: Dibujar la capa de la casa al final para que quede encima ---
+            layers=[capa_demanda, capa_casa],
             api_keys={'mapbox': 'pk.eyJ1Ijoib210ZWdvIiwiYSI6ImNtZGUwbnpjYjBhcjgyaXB4Y2F2aGd0YnIifQ.SsW2a_INxbQpciezR9FXww'}
         ))
