@@ -103,9 +103,9 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
 # --- CARGA DE DATOS ---
 df_manzanas, df_personas = generar_datos_unificados()
 CASAS_OBREGONENSES = {
-    "Casa Comunitaria La Cebada": {"lat": 19.3512, "lon": -99.2560},
-    "Biblioteca Pública José Revueltas": {"lat": 19.3539, "lon": -99.2009},
-    "Gimnasio Torres de Potrero": {"lat": 19.3406, "lon": -99.2452}
+    "Casa Comunitaria La Cebada": {"lat": 19.37961, "lon": -99.23361},
+    "Biblioteca Pública José Revueltas": {"lat": 19.35257, "lon": -99.23525},
+    "Gimnasio Torres de Potrero": {"lat": 19.33011, "lon": -99.25123}
 }
 
 # --- TÍTULO PRINCIPAL ---
