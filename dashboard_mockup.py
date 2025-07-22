@@ -509,13 +509,14 @@ with tab4:
 
         view_state = pdk.ViewState(latitude=df_mapa_operativo["Latitud"].mean(), longitude=df_mapa_operativo["Longitud"].mean(), zoom=14, pitch=50)
         
-        # --- CAMBIO DE ESTILO DEL MAPA ---
+# --- CAMBIO DE ESTILO DEL MAPA (MÉTODO DIRECTO) ---
         st.pydeck_chart(pdk.Deck(
-            map_style="mapbox://styles/mapbox/dark-v10", # <--- MAPA OSCURO
-            initial_view_state=view_state, 
-            layers=layers
+            map_style="mapbox://styles/mapbox/dark-v10",
+            initial_view_state=view_state,
+            layers=layers,
+            # --- AÑADE ESTA LÍNEA CON TU CLAVE ---
+            api_keys={'mapbox': 'pk.eyJ1Ijoib210ZWdvIiwiYSI6ImNtZGUwbnpjYjBhcjgyaXB4Y2F2aGd0YnIifQ.SsW2a_INxbQpciezR9FXww'}
         ))
-
 
 
 
@@ -561,4 +562,11 @@ with tab5:
         capa_casa = pdk.Layer("ScatterplotLayer", data=df_casas[df_casas["nombre"] == casa_seleccionada_nombre], get_position="[lon, lat]", get_color="[255, 215, 0, 255]", get_radius=100, pickable=True, tooltip={"text": "{nombre}"})
         capa_demanda = pdk.Layer("ScatterplotLayer", data=df_demanda, get_position="[Longitud, Latitud]", get_color="[214, 39, 40, 160]", get_radius=25, pickable=True, tooltip={"text": "ID: {ID}\nEdad: {Edad}"})
         view_state = pdk.ViewState(latitude=casa_seleccionada_coords['lat'], longitude=casa_seleccionada_coords['lon'], zoom=14, pitch=50)
-        st.pydeck_chart(pdk.Deck(map_style="mapbox://styles/mapbox/dark-v10", initial_view_state=view_state, layers=[capa_casa, capa_demanda]))
+       # --- CAMBIO DE ESTILO DEL MAPA (MÉTODO DIRECTO) ---
+        st.pydeck_chart(pdk.Deck(
+            map_style="mapbox://styles/mapbox/outdoors-v11",
+            initial_view_state=view_state,
+            layers=layers,
+            # --- AÑADE ESTA LÍNEA CON TU CLAVE ---
+            api_keys={'mapbox': 'pk.eyJ1Ijoib210ZWdvIiwiYSI6ImNtZGUwbnpjYjBhcjgyaXB4Y2F2aGd0YnIifQ.SsW2a_INxbQpciezR9FXww'}
+        ))
