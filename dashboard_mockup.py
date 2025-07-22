@@ -16,24 +16,18 @@ st.set_page_config(
 
 @st.cache_data
 def generar_datos_unificados(num_manzanas_por_colonia=15):
-    """
-    Crea y devuelve dos DataFrames consistentes: uno de manzanas y otro de personas.
-    """
-    # 1. UNIVERSO DE DATOS (ÚNICA FUENTE DE VERDAD)
+    # ... (el código de esta función no cambia en la parte de manzanas) ...
+    # --- 1. UNIVERSO DE DATOS ---
     colonias_data = {
-        "Barrio Norte": ["10350"],
-        "Jalalpa": ["10400", "10401"],
-        "Lomas de Becerra S1": ["10370"],
-        "El Rodeo": ["10500"],
-        "Golondrinas": ["10510"],
-        "Tlacoyaque": ["10600"],
-        "Santa Lucía": ["10700"]
+        "Barrio Norte": ["10350"], "Jalalpa": ["10400", "10401"], "Lomas de Becerra S1": ["10370"],
+        "El Rodeo": ["10500"], "Golondrinas": ["10510"], "Tlacoyaque": ["10600"], "Santa Lucía": ["10700"]
     }
     programas = ["Beca Benito Juárez", "Pensión Adulto Mayor", "IMSS Bienestar", "Beca Rita Cetina", "Ninguno"]
     estatus_operativos = ["Por contactar", "Pre-registro completo", "Cita generada", "Visita programada"]
     
     # --- 2. GENERAR DATOS DE MANZANAS ---
     manzanas_list = []
+    # (El código para generar df_manzanas se queda exactamente igual que en la versión anterior)
     for colonia, agebs in colonias_data.items():
         for ageb in agebs:
             for i in range(num_manzanas_por_colonia):
@@ -41,12 +35,10 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
                 total_viviendas = np.random.randint(10, 50)
                 viviendas_censadas = np.random.randint(0, total_viviendas)
                 porcentaje = (viviendas_censadas / total_viviendas) if total_viviendas > 0 else 0
-                
                 if porcentaje <= 0.25: estatus_censado = "0% - 25%"
                 elif porcentaje <= 0.50: estatus_censado = "25.1% - 50%"
                 elif porcentaje <= 0.75: estatus_censado = "50.1% - 75%"
                 else: estatus_censado = "75.1% - 100%"
-
                 manzanas_list.append({
                     "ID_Manzana": manzana_id, "AGEB": ageb, "Manzana": f"{i:02d}", "Colonia": colonia,
                     "Total de Viviendas Habitadas": total_viviendas, "Viviendas Censadas": viviendas_censadas,
@@ -55,36 +47,40 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
                 })
     df_manzanas = pd.DataFrame(manzanas_list)
 
-    # --- 3. GENERAR DATOS DE PERSONAS BASADOS EN LAS MANZANAS ---
+    # --- 3. GENERAR DATOS DE PERSONAS (CON NUEVOS CAMPOS) ---
     personas_list = []
-    # Inyectar casos de la narrativa en la primera manzana de Barrio Norte
+    # (La inyección de datos para la narrativa también se actualiza)
     manzana_narrativa = df_manzanas[df_manzanas["Colonia"] == "Barrio Norte"].iloc[0]
-    for _ in range(20):
+    for i in range(20):
         personas_list.append({
             "ID": np.random.randint(9000, 9999), "Colonia": "Barrio Norte", "ID_Manzana": manzana_narrativa["ID_Manzana"],
+            "ID_Vivienda": f"{manzana_narrativa['ID_Manzana']}-{i//3}", # Simula 3 personas por vivienda
             "Latitud": 19.38 + np.random.normal(0, 0.001), "Longitud": -99.18 + np.random.normal(0, 0.001),
+            "Celular": f"55{np.random.randint(10000000, 99999999)}" if np.random.rand() > 0.1 else None,
+            "Correo": f"persona.{np.random.randint(1,100)}@email.com" if np.random.rand() > 0.4 else None,
             "Edad": np.random.randint(24, 36), "Sexo": "Femenino", "Tiene_Bebes": 1, "Es_Adulto_Mayor": 0, "Rezago_Educativo": 0, "Acceso_Salud": 1,
             "Seguridad_Social": 1, "Calidad_Vivienda": 0, "Servicios_Vivienda": 0, "Acceso_Alimentacion": 0,
             "Programa_Asignado": np.random.choice(["IMSS Bienestar", "Ninguno"], p=[0.4, 0.6]),
             "Estatus_Operativo": np.random.choice(estatus_operativos)
         })
 
-    # Generar el resto de las personas
+    # (El resto de la generación de personas también se actualiza)
     for _, manzana_row in df_manzanas.iterrows():
-        # Generar personas para las viviendas censadas en cada manzana
         for i in range(manzana_row["Viviendas Censadas"]):
             edad = np.random.randint(0, 90)
             rezago_edu = np.random.choice([0, 1], p=[0.7, 0.3])
             acceso_salud_rand = np.random.choice([0, 1], p=[0.6, 0.4])
-            programa_asignado = "Ninguno"
-            estatus = np.random.choice(estatus_operativos)
+            programa_asignado, estatus = "Ninguno", np.random.choice(estatus_operativos)
             if edad >= 65 and np.random.rand() > 0.3: programa_asignado, estatus = "Pensión Adulto Mayor", "Cubierto"
             elif rezago_edu == 1 and edad < 25 and np.random.rand() > 0.5: programa_asignado, estatus = np.random.choice(["Beca Benito Juárez", "Beca Rita Cetina"]), "Cubierto"
             elif acceso_salud_rand == 1 and np.random.rand() > 0.6: programa_asignado, estatus = "IMSS Bienestar", "Cubierto"
             
             personas_list.append({
                 "ID": int(f"{manzana_row['AGEB']}{i}"), "Colonia": manzana_row["Colonia"], "ID_Manzana": manzana_row["ID_Manzana"],
+                "ID_Vivienda": f"{manzana_row['ID_Manzana']}-{i//np.random.randint(1,4)}", # Simula de 1 a 3 personas por vivienda
                 "Latitud": 19.35 + np.random.normal(0, 0.05), "Longitud": -99.22 + np.random.normal(0, 0.05),
+                "Celular": f"55{np.random.randint(10000000, 99999999)}" if np.random.rand() > 0.1 else None, # 10% sin celular
+                "Correo": f"user.{i}@{manzana_row['Colonia'].split()[0].lower()}.com" if np.random.rand() > 0.5 else None, # 50% sin correo
                 "Edad": edad, "Sexo": np.random.choice(["Masculino", "Femenino"]),
                 "Tiene_Bebes": 1 if 18 <= edad <= 45 and np.random.rand() > 0.8 else 0, "Es_Adulto_Mayor": 1 if edad >= 65 else 0,
                 "Rezago_Educativo": rezago_edu, "Acceso_Salud": acceso_salud_rand,
@@ -96,7 +92,6 @@ def generar_datos_unificados(num_manzanas_por_colonia=15):
     df_personas = pd.DataFrame(personas_list)
     df_personas['Tiene_Programa_Social'] = df_personas['Programa_Asignado'].apply(lambda x: 0 if x == 'Ninguno' else 1)
     
-    # 4. Devolver AMBOS DataFrames
     return df_manzanas, df_personas
 
 
@@ -260,10 +255,12 @@ with tab1:
         
 
 # --- PESTAÑA 2: CÓDIGO CORREGIDO Y REORDENADO ---
+
+# --- PESTAÑA 2: VISTA GENERAL FIJA + ANÁLISIS INTERACTIVO ---
 with tab2:
     st.header("Análisis de Carencias Sociales")
 
-    # --- SECCIÓN 1: VISTA GENERAL CON DATOS FIJOS (AHORA AL PRINCIPIO) ---
+    # --- SECCIÓN 1: VISTA GENERAL CON DATOS FIJOS (SIEMPRE VISIBLE) ---
     st.subheader("Vista General de Carencias (Muestra)")
 
     datos_fijos_carencias = {
@@ -336,28 +333,37 @@ with tab2:
             st.info("No hay personas con esta carencia en la selección actual.")
         else:
             st.metric(label="Total de Personas Identificadas", value=len(df_objetivo))
-            st.dataframe(df_objetivo[["ID", "Colonia", "Edad", "Sexo", "Programa_Asignado", "Estatus_Operativo"]])
+            st.dataframe(df_objetivo[["ID", "Colonia", "ID_Vivienda", "Edad", "Sexo", "Celular", "Correo"]])
             st.markdown("---")
             st.markdown("#### Acciones")
-            col_accion1, col_accion2 = st.columns(2)
+            
+            col_accion1, col_accion2, col_accion3 = st.columns(3)
+
+            @st.cache_data
+            def convertir_df_a_csv(df):
+                return df.to_csv(index=False).encode('utf-8')
+
             with col_accion1:
-                @st.cache_data
-                def convertir_df_a_csv(df):
-                    return df.to_csv(index=False).encode('utf-8')
-                csv = convertir_df_a_csv(df_objetivo[["ID", "Colonia", "Edad", "Sexo", "Programa_Asignado", "Estatus_Operativo"]])
-                st.download_button(label="📥 Descargar Reporte en CSV", data=csv, file_name=f'reporte.csv', mime='text/csv', use_container_width=True)
+                csv_individual = convertir_df_a_csv(df_objetivo[["ID", "Colonia", "Edad", "Celular", "Correo", "Latitud", "Longitud"]])
+                st.download_button(label="📥 Reporte Individual", data=csv_individual, file_name='reporte_individual_contacto.csv', mime='text/csv', help="Descarga la lista de personas con sus datos de contacto y ubicación.", use_container_width=True)
+
             with col_accion2:
-                st.link_button("📨 Enviar Comunicación / Gestionar", "https://construir-comunidad.bubbleapps.io/version-test/dashboard-admin", help="Abre la plataforma de gestión.", type="primary", use_container_width=True)
+                df_vivienda = df_objetivo.groupby('ID_Vivienda').agg(Colonia=('Colonia', 'first'), Latitud=('Latitud', 'mean'), Longitud=('Longitud', 'mean'), Miembros_en_Objetivo=('ID', 'count'), Miembros_Sin_Correo=('Correo', lambda x: x.isna().sum()), Miembros_Sin_Celular=('Celular', lambda x: x.isna().sum())).reset_index()
+                csv_vivienda = convertir_df_a_csv(df_vivienda)
+                st.download_button(label="🏘️ Reporte por Vivienda", data=csv_vivienda, file_name='reporte_agregado_vivienda.csv', mime='text/csv', help="Descarga un reporte agregado por vivienda para el enrolamiento en campo.", use_container_width=True)
+
+            with col_accion3:
+                st.link_button("📨 Gestionar Comunicación", "https://construir-comunidad.bubbleapps.io/version-test/dashboard-admin", help="Abre la plataforma de gestión para contactar a la población seleccionada.", type="primary", use_container_width=True)
+    
     else: # Si están seleccionadas "Todas las carencias"
         st.info("👆 Utiliza los filtros de arriba para identificar y analizar un grupo específico de la población.")
 
-    # El mapa de calor se muestra si están seleccionadas "Todas" las colonias
     if colonia_seleccionada == "Todas":
         st.subheader("Mapa de Calor: Carencias por Colonia (Dinámico)")
         heatmap_data = df_filtrado.groupby("Colonia")[lista_carencias].mean()
         heatmap_data.columns = heatmap_data.columns.map(nombres_carencias)
         fig_heatmap = px.imshow(heatmap_data.sort_index(), text_auto=".0%", aspect="auto", color_continuous_scale="Reds")
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+        st.plotly_chart(fig_heatmap, use_container_width=True)    
 
     
 
